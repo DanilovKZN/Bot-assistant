@@ -43,15 +43,15 @@ BOTS_REPLICAS = [
 ]
 
 STICKERS = {
-    '1': 
-    'CAACAgIAAxkBAAED8JpiC' +
-    '-NT140boOujnrJnLwZCDxRehgACRQwAAnqdmEo2Geh166RTLCME',
-    '2': 
-    'CAACAgIAAxkBAAED8JxiC-TR1-6VWQ' + 
-    'aY5pta3xfRBB1zJQACoAwAAttxQEoPLS2JLnzifSME',
-    '3': 
-    'CAACAgIAAxkBAAED8J5iC-UapCEYA' + 
-    'AHaj-kb_-r5gH2n0vsAArIAA61lvBRB3wABZwq4QhkjBA',
+    '1':
+    'CAACAgIAAxkBAAED8JpiC' 
+    + '-NT140boOujnrJnLwZCDxRehgACRQwAAnqdmEo2Geh166RTLCME',
+    '2':
+    'CAACAgIAAxkBAAED8JxiC-TR1-6VWQ'
+    + 'aY5pta3xfRBB1zJQACoAwAAttxQEoPLS2JLnzifSME',
+    '3':
+    'CAACAgIAAxkBAAED8J5iC-UapCEYA'
+    + 'AHaj-kb_-r5gH2n0vsAArIAA61lvBRB3wABZwq4QhkjBA',
 }
 
 PICTURES = {
@@ -60,6 +60,7 @@ PICTURES = {
     'ben_msg': 'img/ben_msg.png',
     'ben_result': 'img/ben_result.png',
     'ben_bot': 'img/ben_bot.png',
+    'ben_error': 'img/ben_error.png',
 }
 
 # Переменная-флаг SEARCH_POINT нужна работы кнопок start, stop
@@ -74,14 +75,14 @@ logging.basicConfig(
 )
 
 # Создаем логер и используем хендлер для потока
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
-handler = StreamHandler(stream=None)
-Formatter = logging.Formatter(
-    '%(asctime)s-%(levelname)s-%(message)s'
-)
-handler.setFormatter(Formatter)
-logger.addHandler(handler)
+# logger = logging.getLogger(__name__)
+# logger.setLevel(logging.INFO)
+# handler = StreamHandler(stream=None)
+# Formatter = logging.Formatter(
+#     '%(asctime)s-%(levelname)s-%(message)s'
+# )
+# handler.setFormatter(Formatter)
+# logger.addHandler(handler)
 
 
 def send_message(bot, message: str):
@@ -115,6 +116,19 @@ def send_message(bot, message: str):
         logging.error('Стикеры не найдены!')
         raise Exception
 
+
+def send_error_message(bot, message: str):
+    """Бот сообщает об ошибке."""
+    try:
+        img = open(PICTURES['ben_result'], 'rb')
+        bot.send_photo(TELEGRAM_CHAT_ID, img)
+        logging.info('Картинка отправлена.')
+    except Exception:
+        logging.error('Картинка не отправлена!')
+    bot.send_message(TELEGRAM_CHAT_ID, message)
+    logging.info('Сообщение отправлено!')
+
+
 # ПОИСК
 def get_api_answer(current_timestamp: int) -> str:
     """Получаем ответ на последнюю домашку по точке из пулинга."""
@@ -144,18 +158,20 @@ def check_response(response):
     try:
         if isinstance(response, dict):
             test_list = response.get('homeworks')
-        else:
-            logging.info('Response - список, а не словарь.')
-            test_list = response[0].get('homeworks')
-        if len(test_list) > 0:
-            if 'homework_name' in test_list[0] or 'status' in test_list[0]:
-                return test_list[0]
+        # else:
+        #     logging.info('Response - список, а не словарь.')
+        #     test_list = response[0].get('homeworks')
+            if len(test_list) > 1:
+                if 'homework_name' in test_list[0] or 'status' in test_list[0]:
+                    return test_list[0]
+                else:
+                    msg = 'Нет ключа: homework_name или status'
+                    logging.error(msg)
+                    raise KeyError(msg)
             else:
-                msg = 'Нет ключей:homework_name, status'
-                logging.error(msg)
-                raise KeyError(msg)
+                return test_list
         else:
-            return empty_dict 
+            raise TypeError('Некорректный тип responce.')    
     except KeyError:
         msg = 'Нет ключа homeworks.'
         logging.error(test_list)
@@ -171,41 +187,29 @@ def parse_status(homework: dict) -> str:
     """Формируем сообщение, если доступны все данные."""
     try:
         if len(homework)> 0:
-            if isinstance(homework, dict):
-                if 'status'in homework:
-                    homework_status = homework.get('status')
-                    if homework_status in HOMEWORK_STATUSES:
-                        verdict = HOMEWORK_STATUSES[homework_status]
-                    else:
-                        raise KeyError(
-                            f'{homework_status} нет в HOMEWORK_STATUSES.'
-                        )
-                else:
-                    raise KeyError('status нет в homework')
-                if 'homework_name' in homework:
-                    homework_name = homework.get('homework_name')
-                    msg = (
-                        'Изменился статус проверки работы'
-                        f'"{homework_name}".{verdict}'
-                    )
-                    return msg
-                return f'{verdict}'
-            elif homework == 'status':
-                logging.info('Странный баг теста.')
-                if homework in HOMEWORK_STATUSES:
-                    verdict = HOMEWORK_STATUSES[homework]
-                else:
-                    raise KeyError(
-                        f'Cтатуса:{homework} нет в HOMEWORK_STATUSES.'
-                    )
-                return f'{verdict}'
-            else:
+            if not isinstance(homework, dict):
                 msg = 'homework не словарь'
                 logging.error(msg)
-                logging.error(homework)
+                print(homework)
                 raise Exception(msg)
+            if not'status'in homework:
+                raise KeyError('status нет в homework')
+            homework_status = homework.get('status')
+            if not homework_status in HOMEWORK_STATUSES:
+                raise KeyError(
+                            f'{homework_status} нет в HOMEWORK_STATUSES.'
+                        )
+            verdict = HOMEWORK_STATUSES[homework_status]
+            if 'homework_name' in homework:
+                    homework_name = homework.get('homework_name')
+                    msg = (
+                        f'Изменился статус проверки работы "{homework_name}"'
+                        f'.{verdict}'
+                    )
+                    return msg
+            return f'{verdict}'
         else:
-            return ''        
+            return ''
     except KeyError as msg:
         raise KeyError(msg)
     except Exception as msg:
@@ -235,7 +239,7 @@ def say_answer(update, context):
         )
         logging.info('Картинка отправлена.')
     except Exception:
-        logging.error('Картинка не отправлена!') 
+        logging.error('Картинка не отправлена!')
 
     context.bot.send_message(
         chat_from_leather_bag.id,
@@ -249,7 +253,7 @@ def wake_up(update, context):
     try:
         img = open(PICTURES['ben_bot'], 'rb')
     except Exception:
-        logging.error('Картинка не найдена!') 
+        logging.error('Картинка не найдена!')
     chat_from_leather_bag = update.effective_chat
     if chat_from_leather_bag.id != int(TELEGRAM_CHAT_ID):
         try:
@@ -272,7 +276,7 @@ def wake_up(update, context):
             "Посмотрим, что у нас получится!"
         )
         button = ReplyKeyboardMarkup(
-            [['/search'],['/stop']], resize_keyboard=True
+            [['/search'], ['/stop']], resize_keyboard=True
         )
         try:
             context.bot.send_photo(
@@ -297,13 +301,13 @@ def start_search(update, context):
     try:
         img = open(PICTURES['ben_start'], 'rb')
     except Exception:
-        logging.error('Картинка не найдена!') 
+        logging.error('Картинка не найдена!')
     messages = [
     'Иду за Джеком, будет желание - гляну, есть ли что для тебя.',
     'Ты уже тыкал сюда, придумай что-нибудь получше.'
     ]
     chat = update.effective_chat
-    if SEARCH_POINT == True:
+    if SEARCH_POINT:
         msg_bot = messages[0]
     else:
         msg_bot = messages[1]
@@ -320,6 +324,7 @@ def start_search(update, context):
         logging.info('Сообщение отправлено!')
         SEARCH_POINT = False
 
+
 def stop_search(update, context):
     """Завершаем поиск и выводим оповещение об этом."""
     global SEARCH_POINT
@@ -327,15 +332,15 @@ def stop_search(update, context):
     try:
         img = open(PICTURES['ben_end'], 'rb')
     except Exception:
-        logging.error('Картинка не найдена!') 
+        logging.error('Картинка не найдена!')
     messages = [
     'Я и не искал.',
     'Ты уже тыкал сюда, придумай что-нибудь получше.',
-    'Должен будешь!',
+    'Должен будешь!'
     ]
     chat = update.effective_chat
-    if SEARCH_POINT == False:
-        if FOUND_WORK == False:
+    if not SEARCH_POINT:
+        if not FOUND_WORK:
             msg_bot = messages[0]
         else:
             msg_bot = messages[2]
@@ -355,6 +360,7 @@ def stop_search(update, context):
         logging.info('Сообщение отправлено!')
         SEARCH_POINT = True
 
+
 def main():
     """Основная логика работы бота."""
     global FOUND_WORK
@@ -365,10 +371,18 @@ def main():
         current_timestamp = int(time.time()) - 2996000
         # Original
         # current_timestamp = int(time.time())
-        updater.dispatcher.add_handler(CommandHandler('start', wake_up))
-        updater.dispatcher.add_handler(CommandHandler('search', start_search))
-        updater.dispatcher.add_handler(CommandHandler('stop', stop_search))
-        updater.dispatcher.add_handler(MessageHandler(Filters.text, say_answer))
+        updater.dispatcher.add_handler(
+            CommandHandler('start', wake_up)
+        )
+        updater.dispatcher.add_handler(
+            CommandHandler('search', start_search)
+        )
+        updater.dispatcher.add_handler(
+            CommandHandler('stop', stop_search)
+        )
+        updater.dispatcher.add_handler(
+            MessageHandler(Filters.text, say_answer)
+        )
         updater.dispatcher.add_handler(
             MessageHandler(
                 Filters.chat(chat_id=TELEGRAM_CHAT_ID),
@@ -378,7 +392,7 @@ def main():
         updater.start_polling()
         try:
             while True:
-                if SEARCH_POINT == False:
+                if not SEARCH_POINT:
                     try:
                         time_marker = {'from_date': f'{current_timestamp}'}
                         response = requests.get(
@@ -386,7 +400,7 @@ def main():
                             headers=HEADERS,
                             params=time_marker
                         )
-                        logging.info(f'{current_timestamp}')
+                        # logging.info(f'{current_timestamp}')
                         message = get_api_answer(current_timestamp)
                         answer = check_response(message)
                         result = parse_status(answer)
@@ -398,12 +412,15 @@ def main():
                             'current_date'
                         )
                         time.sleep(RETRY_TIME)
-                        logging.info(f'{current_timestamp}')
-                    except IndexError:
-                        logging.info('Ответа пока нет.')
+                        # logging.info(f'{current_timestamp}')
+                    # except IndexError:
+                    #     logging.info('Ответа пока нет.')
                     except Exception as error:
                         message = f'Дангер! Паник!: {error}'
                         logging.critical(message)
+                        send_error_message(bot, message)
+                        current_timestamp = int(time.time())
+
         except KeyboardInterrupt:
             updater.idle()
     else:
