@@ -191,10 +191,10 @@ def parse_status(homework: dict) -> str:
                 logging.error(msg)
                 print(homework)
                 raise Exception(msg)
-            if not 'status' in homework:
+            if 'status' not in homework:
                 raise KeyError('status нет в homework')
             homework_status = homework.get('status')
-            if  homework_status not in HOMEWORK_STATUSES:
+            if homework_status not in HOMEWORK_STATUSES:
                 raise KeyError(
                     f'{homework_status} нет в HOMEWORK_STATUSES.'
                 )
