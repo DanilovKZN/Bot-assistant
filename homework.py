@@ -4,7 +4,7 @@ import random
 import sys
 import time
 from http import HTTPStatus
-from logging import Formatter, StreamHandler
+# from logging import Formatter, StreamHandler
 
 import requests
 from dotenv import load_dotenv
@@ -44,7 +44,7 @@ BOTS_REPLICAS = [
 
 STICKERS = {
     '1':
-    'CAACAgIAAxkBAAED8JpiC' 
+    'CAACAgIAAxkBAAED8JpiC'
     + '-NT140boOujnrJnLwZCDxRehgACRQwAAnqdmEo2Geh166RTLCME',
     '2':
     'CAACAgIAAxkBAAED8JxiC-TR1-6VWQ'
@@ -154,7 +154,6 @@ def get_api_answer(current_timestamp: int) -> str:
 
 def check_response(response):
     """Проверяем есть ли что в словаре(списке)."""
-    empty_dict = {}
     try:
         if isinstance(response, dict):
             test_list = response.get('homeworks')
@@ -171,7 +170,7 @@ def check_response(response):
             else:
                 return test_list
         else:
-            raise TypeError('Некорректный тип responce.')    
+            raise TypeError('Некорректный тип responce.')
     except KeyError:
         msg = 'Нет ключа homeworks.'
         logging.error(test_list)
@@ -186,27 +185,27 @@ def check_response(response):
 def parse_status(homework: dict) -> str:
     """Формируем сообщение, если доступны все данные."""
     try:
-        if len(homework)> 0:
+        if len(homework) > 0:
             if not isinstance(homework, dict):
                 msg = 'homework не словарь'
                 logging.error(msg)
                 print(homework)
                 raise Exception(msg)
-            if not'status'in homework:
+            if not 'status' in homework:
                 raise KeyError('status нет в homework')
             homework_status = homework.get('status')
-            if not homework_status in HOMEWORK_STATUSES:
+            if  homework_status not in HOMEWORK_STATUSES:
                 raise KeyError(
-                            f'{homework_status} нет в HOMEWORK_STATUSES.'
-                        )
+                    f'{homework_status} нет в HOMEWORK_STATUSES.'
+                )
             verdict = HOMEWORK_STATUSES[homework_status]
             if 'homework_name' in homework:
-                    homework_name = homework.get('homework_name')
-                    msg = (
-                        f'Изменился статус проверки работы "{homework_name}"'
-                        f'.{verdict}'
-                    )
-                    return msg
+                homework_name = homework.get('homework_name')
+                msg = (
+                    f'Изменился статус проверки работы "{homework_name}"'
+                    f'.{verdict}'
+                )
+                return msg
             return f'{verdict}'
         else:
             return ''
@@ -303,8 +302,8 @@ def start_search(update, context):
     except Exception:
         logging.error('Картинка не найдена!')
     messages = [
-    'Иду за Джеком, будет желание - гляну, есть ли что для тебя.',
-    'Ты уже тыкал сюда, придумай что-нибудь получше.'
+        'Иду за Джеком, будет желание - гляну, есть ли что для тебя.',
+        'Ты уже тыкал сюда, придумай что-нибудь получше.'
     ]
     chat = update.effective_chat
     if SEARCH_POINT:
@@ -334,9 +333,9 @@ def stop_search(update, context):
     except Exception:
         logging.error('Картинка не найдена!')
     messages = [
-    'Я и не искал.',
-    'Ты уже тыкал сюда, придумай что-нибудь получше.',
-    'Должен будешь!'
+        'Я и не искал.',
+        'Ты уже тыкал сюда, придумай что-нибудь получше.',
+        'Должен будешь!'
     ]
     chat = update.effective_chat
     if not SEARCH_POINT:
@@ -412,9 +411,6 @@ def main():
                             'current_date'
                         )
                         time.sleep(RETRY_TIME)
-                        # logging.info(f'{current_timestamp}')
-                    # except IndexError:
-                    #     logging.info('Ответа пока нет.')
                     except Exception as error:
                         message = f'Дангер! Паник!: {error}'
                         logging.critical(message)
