@@ -18,7 +18,7 @@ TELEGRAM_TOKEN = os.getenv('TOKEN_T')
 TELEGRAM_CHAT_ID = os.getenv('CHAT_ID')
 
 # Original
-#RETRY_TIME = 600
+# RETRY_TIME = 600
 # Debug version
 RETRY_TIME = 30
 
@@ -43,9 +43,15 @@ BOTS_REPLICAS = [
 ]
 
 STICKERS = {
-    '1': 'CAACAgIAAxkBAAED8JpiC-NT140boOujnrJnLwZCDxRehgACRQwAAnqdmEo2Geh166RTLCME',
-    '2': 'CAACAgIAAxkBAAED8JxiC-TR1-6VWQaY5pta3xfRBB1zJQACoAwAAttxQEoPLS2JLnzifSME',
-    '3': 'CAACAgIAAxkBAAED8J5iC-UapCEYAAHaj-kb_-r5gH2n0vsAArIAA61lvBRB3wABZwq4QhkjBA',
+    '1': 
+    'CAACAgIAAxkBAAED8JpiC' +
+    '-NT140boOujnrJnLwZCDxRehgACRQwAAnqdmEo2Geh166RTLCME',
+    '2': 
+    'CAACAgIAAxkBAAED8JxiC-TR1-6VWQ' + 
+    'aY5pta3xfRBB1zJQACoAwAAttxQEoPLS2JLnzifSME',
+    '3': 
+    'CAACAgIAAxkBAAED8J5iC-UapCEYA' + 
+    'AHaj-kb_-r5gH2n0vsAArIAA61lvBRB3wABZwq4QhkjBA',
 }
 
 PICTURES = {
@@ -58,7 +64,7 @@ PICTURES = {
 
 # Переменная-флаг SEARCH_POINT нужна работы кнопок start, stop
 SEARCH_POINT = True
-# Переменная-флаг FOUND_WORK нужна для смены ответа 
+# Переменная-флаг FOUND_WORK нужна для смены ответа
 # при повторном нажатии на кнопки.
 FOUND_WORK = False
 
@@ -77,7 +83,8 @@ Formatter = logging.Formatter(
 handler.setFormatter(Formatter)
 logger.addHandler(handler)
 
-def send_message(bot, message:str):
+
+def send_message(bot, message: str):
     """Бот отправляет сообщение и стикер."""
     try:
         img = open(PICTURES['ben_result'], 'rb')
@@ -89,7 +96,7 @@ def send_message(bot, message:str):
     msg = """Как и многие жизненные проблемы,
     эту можно решить сгибанием.
     Держи ответ!: """
-    
+
     bot.send_message(TELEGRAM_CHAT_ID, msg)
     logging.info('Сообщение отправлено!')
     bot.send_message(TELEGRAM_CHAT_ID, message)
@@ -108,8 +115,8 @@ def send_message(bot, message:str):
         logging.error('Стикеры не найдены!')
         raise Exception
 
-######################################## ПОИСК ################################################
-def get_api_answer(current_timestamp:int)->str:
+# ПОИСК
+def get_api_answer(current_timestamp: int) -> str:
     """Получаем ответ на последнюю домашку по точке из пулинга."""
     timestamp = current_timestamp or int(time.time())
     params = {'from_date': timestamp}
@@ -130,6 +137,7 @@ def get_api_answer(current_timestamp:int)->str:
         logging.error(msg)
         raise Exception(msg)
 
+
 def check_response(response):
     """Проверяем есть ли что в словаре(списке)."""
     empty_dict = {}
@@ -139,7 +147,7 @@ def check_response(response):
         else:
             logging.info('Response - список, а не словарь.')
             test_list = response[0].get('homeworks')
-        if len(test_list)> 0:
+        if len(test_list) > 0:
             if 'homework_name' in test_list[0] or 'status' in test_list[0]:
                 return test_list[0]
             else:
@@ -147,7 +155,7 @@ def check_response(response):
                 logging.error(msg)
                 raise KeyError(msg)
         else:
-            return empty_dict       
+            return empty_dict 
     except KeyError:
         msg = 'Нет ключа homeworks.'
         logging.error(test_list)
@@ -158,30 +166,39 @@ def check_response(response):
         logging.error(msg)
         raise TypeError(msg)
 
-def parse_status(homework:dict)->str:
+
+def parse_status(homework: dict) -> str:
     """Формируем сообщение, если доступны все данные."""
     try:
         if len(homework)> 0:
             if isinstance(homework, dict):
                 if 'status'in homework:
                     homework_status = homework.get('status')
-                    if homework_status in HOMEWORK_STATUSES:  
+                    if homework_status in HOMEWORK_STATUSES:
                         verdict = HOMEWORK_STATUSES[homework_status]
                     else:
-                        raise KeyError(f'Cтатуса:{homework_status} нет в HOMEWORK_STATUSES.')
+                        raise KeyError(
+                            f'{homework_status} нет в HOMEWORK_STATUSES.'
+                        )
                 else:
-                    raise KeyError(f'status нет в homework')
+                    raise KeyError('status нет в homework')
                 if 'homework_name' in homework:
                     homework_name = homework.get('homework_name')
-                    return f'Изменился статус проверки работы "{homework_name}".{verdict}'
+                    msg = (
+                        'Изменился статус проверки работы'
+                        f'"{homework_name}".{verdict}'
+                    )
+                    return msg
                 return f'{verdict}'
             elif homework == 'status':
                 logging.info('Странный баг теста.')
                 if homework in HOMEWORK_STATUSES:
                     verdict = HOMEWORK_STATUSES[homework]
                 else:
-                    raise KeyError(f'Cтатуса:{homework} нет в HOMEWORK_STATUSES.')
-                return f'{verdict}'    
+                    raise KeyError(
+                        f'Cтатуса:{homework} нет в HOMEWORK_STATUSES.'
+                    )
+                return f'{verdict}'
             else:
                 msg = 'homework не словарь'
                 logging.error(msg)
@@ -194,13 +211,15 @@ def parse_status(homework:dict)->str:
     except Exception as msg:
         raise Exception(msg)
 
-def check_tokens()->bool:
+
+def check_tokens() -> bool:
     """Если все токены в наличии, то Трушечка."""
     if not TELEGRAM_CHAT_ID or not TELEGRAM_TOKEN or not PRACTICUM_TOKEN:
         return False
     return True
 
-######################################## /ПОИСК ###############################################
+
+# /ПОИСК
 def say_answer(update, context):
     """Вопросы тут пока не к месту."""
     try:
@@ -223,6 +242,7 @@ def say_answer(update, context):
         text=text_bot
     )
     logging.info('Сообщение отправлено!')
+
 
 def wake_up(update, context):
     """Приветствие при запуске бота."""
@@ -269,6 +289,7 @@ def wake_up(update, context):
         )
         logging.info('Сообщение отправлено!')
 
+
 # Метки кнопок
 def start_search(update, context):
     """Начинаем поиск и выводим оповещение об этом."""
@@ -292,11 +313,11 @@ def start_search(update, context):
     except Exception:
         logging.error('Картинка не отправлена!')
     if chat.id != int(TELEGRAM_CHAT_ID):
-        context.bot.send_message(chat.id,'Чувак, не делай так больше!')
+        context.bot.send_message(chat.id, 'Чувак, не делай так больше!')
         logging.info('Сообщение отправлено!')
     else:
         context.bot.send_message(chat.id, msg_bot)
-        logging.info('Сообщение отправлено!') 
+        logging.info('Сообщение отправлено!')
         SEARCH_POINT = False
 
 def stop_search(update, context):
@@ -327,7 +348,7 @@ def stop_search(update, context):
     except Exception:
         logging.error('Картинка не отправлена!')
     if chat.id != int(TELEGRAM_CHAT_ID):
-        context.bot.send_message(chat.id,'Чувак, не делай так больше!')
+        context.bot.send_message(chat.id, 'Чувак, не делай так больше!')
         logging.info('Сообщение отправлено!')
     else:
         context.bot.send_message(chat.id, msg_bot)
@@ -343,7 +364,7 @@ def main():
         # Debug version
         current_timestamp = int(time.time()) - 2996000
         # Original
-        #current_timestamp = int(time.time())
+        # current_timestamp = int(time.time())
         updater.dispatcher.add_handler(CommandHandler('start', wake_up))
         updater.dispatcher.add_handler(CommandHandler('search', start_search))
         updater.dispatcher.add_handler(CommandHandler('stop', stop_search))
@@ -373,7 +394,9 @@ def main():
                             send_message(bot, result)
                             logging.info('Сообщение отправлено.')
                             FOUND_WORK = True
-                        current_timestamp = response.json().get('current_date')
+                        current_timestamp = response.json().get(
+                            'current_date'
+                        )
                         time.sleep(RETRY_TIME)
                         logging.info(f'{current_timestamp}')
                     except IndexError:
@@ -386,5 +409,7 @@ def main():
     else:
         logging.critical('Токены всё, тю-тю...')
         sys.exit(1)
+
+
 if __name__ == '__main__':
     main()
