@@ -280,14 +280,11 @@ def main():
                         current_timestamp,
                         bot
                     )
-                except AttributeError as error:
-                    botfilling.send_error_message(bot, error)
                 except TimeoutError:
                     pass
                 except Exception as error:
                     message = f'Дангер! Паник!: {error}'
                     logger.critical(message)
-                    logging.error(message)
                     botfilling.send_error_message(bot, message)
                 time.sleep(SLEEP_TIME)
     except KeyboardInterrupt:
