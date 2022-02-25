@@ -31,7 +31,7 @@ DEV_ID = os.getenv('DEV_ID')
 # if SLEEP_TIME <= 0 or SLEEP_TIME >= 36000:
 #     raise ValueError('Ошибка значений таймера.')
 
-SLEEP_TIME = int(os.getenv('SLEEP_TIME'))
+SLEEP_TIME = os.getenv('SLEEP_TIME')
 
 ENDPOINT = 'https://practicum.yandex.ru/api/user_api/homework_statuses/'
 HEADERS = {'Authorization': f'OAuth {PRACTICUM_TOKEN}'}
@@ -288,7 +288,7 @@ def main():
                     message = f'Дангер! Паник!: {error}'
                     logger.critical(message)
                     botfilling.send_error_message(bot, message)
-                time.sleep(SLEEP_TIME)
+                time.sleep(int(SLEEP_TIME))
     except KeyboardInterrupt:
         updater.idle()
     except Exception as error:
