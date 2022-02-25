@@ -27,7 +27,7 @@ DEV_ID = os.getenv('DEV_ID')
 try:
     SLEEP_TIME = int(os.getenv('SLEEP_TIME'))
 except TypeError:
-    raise TypeError('Ошибка таймера.')    
+    raise TypeError('Ошибка таймера.')
 if SLEEP_TIME <= 0 or SLEEP_TIME >= 36000:
     raise ValueError('Ошибка значений таймера.')
 
@@ -56,27 +56,30 @@ handler = RotatingFileHandler(
     maxBytes=50000000,
     backupCount=5
 )
-Formatter = logging.Formatter(
-    '%(asctime)s-%(levelname)s-%(message)s'
-)
-handler.setFormatter(Formatter)
 logger.addHandler(handler)
 
 
 # Исключение при ошибке получения API
 class ApiReceivingError(Exception):
+    """Исключение при ошибке получения API."""
     pass
 
+
 def error_tg_handler(update, context):
-    """Отправляем ошибку пользователю, указанному
-    в DEV_ID"""
+    """
+    Отправляем ошибку пользователю, указанному
+    в DEV_ID
+    """
     if update.effective_message:
         msg_users = 'Пардон! Возникла ошибочка, но мы ее уже устраняем.'
         update.effective_message.reply_text(msg_users)
     info_box = []
     trace = "".join(traceback.format_tb(sys.exc_info()[2]))
     if update.effective_user:
-        bad_user = str(update.effective_user.id) + update.effective_user.first_name
+        bad_user = (
+            str(update.effective_user.id) 
+            + update.effective_user.first_name
+        )
         info_box.append(f' с пользователем {bad_user}')
     if update.effective_chat:
         info_box.append(f' внутри чата <i>{update.effective_chat.title}</i>')
@@ -89,6 +92,7 @@ def error_tg_handler(update, context):
     context.bot.send_message(DEV_ID, msg_dev)
     logger.error('Бот сломался!')
     logging.error('Бот работает не так.')
+
 
 def send_message(bot, message: str):
     """Бот отправляет сообщение и стикер."""
@@ -129,7 +133,7 @@ def send_message(bot, message: str):
 def get_api_answer(current_timestamp: int) -> str:
     """Получаем ответ на последнюю домашку по точке из пулинга."""
     timestamp = current_timestamp or int(time.time())
-    params = {'from_date': timestamp} 
+    params = {'from_date': timestamp}
     response = requests.get(
         ENDPOINT,
         headers=HEADERS,
@@ -238,7 +242,7 @@ def main():
         CommandHandler('start', botfilling.wake_up)
     )
     updater.dispatcher.add_handler(
-        CommandHandler('search',botfilling.start_search)
+        CommandHandler('search', botfilling.start_search)
     )
     updater.dispatcher.add_handler(
         CommandHandler('stop', botfilling.stop_search)
@@ -258,7 +262,6 @@ def main():
         while True:
             if not botfilling.GENERAL_FLAG.result_while:
                 try:
-                    logging.info(f'{current_timestamp}')
                     message = get_api_answer(current_timestamp)
                     answer = check_response(message)
                     result = parse_status(answer)
@@ -284,10 +287,7 @@ def main():
         sys.exit(1)
     except KeyboardInterrupt:
         updater.idle()
-    except Exception as error:
-        logger.error(error)
-        logging.error(error)
-        updater.idle()
+
 
 if __name__ == '__main__':
     main()
