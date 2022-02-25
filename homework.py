@@ -23,7 +23,7 @@ TELEGRAM_CHAT_ID = os.getenv('CHAT_ID')
 DEV_ID = os.getenv('DEV_ID')
 
 # НЕ ПРОХОДИТ ТЕСТЫ
-#SLEEP_TIME = int(os.getenv('SLEEP_TIME'))
+# SLEEP_TIME = int(os.getenv('SLEEP_TIME'))
 SLEEP_TIME = 30
 
 
