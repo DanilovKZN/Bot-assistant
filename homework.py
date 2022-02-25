@@ -292,6 +292,9 @@ def main():
                 time.sleep(SLEEP_TIME)
     except KeyboardInterrupt:
         updater.idle()
+    except Exception as error:
+        logger.critical(error)
+        updater.idle()
 
 
 if __name__ == '__main__':
