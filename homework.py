@@ -22,7 +22,6 @@ PRACTICUM_TOKEN = os.getenv('TOKEN_Y')
 TELEGRAM_CHAT_ID = os.getenv('CHAT_ID')
 DEV_ID = os.getenv('DEV_ID')
 SLEEP_TIME = os.getenv('SLEEP_TIME')
-SLEEP_TIME = int(SLEEP_TIME)
 
 
 ENDPOINT = 'https://practicum.yandex.ru/api/user_api/homework_statuses/'
@@ -204,7 +203,7 @@ def check_tokens() -> bool:
         SLEEP_TIME
     ]
     result = True
-    if SLEEP_TIME <= 0 or SLEEP_TIME >= 36000:
+    if int(SLEEP_TIME) <= 0 or int(SLEEP_TIME) >= 36000:
         msg = 'Неверное значение таймера!'
         logger.error(msg)
         logging.info(msg)
@@ -278,7 +277,7 @@ def main():
                     message = f'Дангер! Паник!: {error}'
                     logger.critical(message)
                     botfilling.send_error_message(bot, message)
-                time.sleep(SLEEP_TIME)
+                time.sleep(int(SLEEP_TIME))
     except KeyboardInterrupt:
         updater.idle()
     except Exception as error:

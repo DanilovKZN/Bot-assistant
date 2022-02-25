@@ -194,6 +194,7 @@ def start_search(update, context):
         logging.info('Сообщение отправлено!')
         GENERAL_FLAG.changing_result_w(False)
 
+
 def stop_search(update, context):
     """Завершаем поиск и выводим оповещение об этом."""
     try:
