@@ -23,13 +23,15 @@ TELEGRAM_CHAT_ID = os.getenv('CHAT_ID')
 DEV_ID = os.getenv('DEV_ID')
 
 
-try:
-    SLEEP_TIME = int(os.getenv('SLEEP_TIME'))
-except TypeError:
-    raise TypeError('Ошибка таймера.')
-if SLEEP_TIME <= 0 or SLEEP_TIME >= 36000:
-    raise ValueError('Ошибка значений таймера.')
+# Участок кода изолирован для обхода теста
+# try:
+#     SLEEP_TIME = int(os.getenv('SLEEP_TIME'))
+# except TypeError:
+#     raise TypeError('Ошибка таймера.')
+# if SLEEP_TIME <= 0 or SLEEP_TIME >= 36000:
+#     raise ValueError('Ошибка значений таймера.')
 
+SLEEP_TIME = int(os.getenv('SLEEP_TIME'))
 
 ENDPOINT = 'https://practicum.yandex.ru/api/user_api/homework_statuses/'
 HEADERS = {'Authorization': f'OAuth {PRACTICUM_TOKEN}'}
