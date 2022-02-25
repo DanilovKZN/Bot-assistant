@@ -4,7 +4,6 @@ import sys
 import time
 import traceback
 from http import HTTPStatus
-from logging import Formatter
 from logging.handlers import RotatingFileHandler
 
 import requests
@@ -62,14 +61,12 @@ logger.addHandler(handler)
 # Исключение при ошибке получения API
 class ApiReceivingError(Exception):
     """Исключение при ошибке получения API."""
+
     pass
 
 
 def error_tg_handler(update, context):
-    """
-    Отправляем ошибку пользователю, указанному
-    в DEV_ID
-    """
+    """Отправляем ошибку юзеру и разработчику."""
     if update.effective_message:
         msg_users = 'Пардон! Возникла ошибочка, но мы ее уже устраняем.'
         update.effective_message.reply_text(msg_users)
@@ -77,7 +74,7 @@ def error_tg_handler(update, context):
     trace = "".join(traceback.format_tb(sys.exc_info()[2]))
     if update.effective_user:
         bad_user = (
-            str(update.effective_user.id) 
+            str(update.effective_user.id)
             + update.effective_user.first_name
         )
         info_box.append(f' с пользователем {bad_user}')
@@ -282,9 +279,6 @@ def main():
                     logging.error(message)
                     botfilling.send_error_message(bot, message)
                 time.sleep(SLEEP_TIME)
-    except ValueError as error:
-        logger.error(error)
-        sys.exit(1)
     except KeyboardInterrupt:
         updater.idle()
 
