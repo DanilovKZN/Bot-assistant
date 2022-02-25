@@ -20,7 +20,6 @@ load_dotenv()
 TELEGRAM_TOKEN = os.getenv('TOKEN_T')
 PRACTICUM_TOKEN = os.getenv('TOKEN_Y')
 TELEGRAM_CHAT_ID = os.getenv('CHAT_ID')
-DEV_ID = os.getenv('DEV_ID')
 
 # НЕ ПРОХОДИТ ТЕСТЫ
 # SLEEP_TIME = int(os.getenv('SLEEP_TIME'))
@@ -82,7 +81,7 @@ def error_tg_handler(update, context):
         f"Ошибка <code>{context.error}</code> случилась {''.join(info_box)}."
         f"Полная трассировка:\n\n<code>{trace}</code>"
     )
-    context.bot.send_message(DEV_ID, msg_dev)
+    context.bot.send_message(TELEGRAM_CHAT_ID, msg_dev)
     logger.error('Бот сломался!')
     logging.error('Бот работает не так.')
 
@@ -198,13 +197,12 @@ def parse_status(homework: dict) -> str:
 
 def check_tokens() -> bool:
     """Если все токены в наличии и время в норме, то Трушечка."""
-    tokens = [
-        TELEGRAM_CHAT_ID,
-        TELEGRAM_TOKEN,
-        PRACTICUM_TOKEN,
-        DEV_ID,
-        SLEEP_TIME
-    ]
+    tokens = {
+        TELEGRAM_CHAT_ID: "ID разработчика",
+        TELEGRAM_TOKEN: "ID бота",
+        PRACTICUM_TOKEN: "ID Практикума",
+        SLEEP_TIME: "Время сна",
+    }
     result = True
     if SLEEP_TIME <= 0 or SLEEP_TIME >= 36000:
         msg = 'Неверное значение таймера!'
@@ -213,10 +211,11 @@ def check_tokens() -> bool:
         result = False
     for token in tokens:
         if not token:
-            msg = f'Отсутствует {token}'
+            result = False
+            msg = f'Отсутствует {tokens[token]}'
             logger.error(msg)
             logging.info(msg)
-            result = False
+            raise AssertionError(msg)
     return result
 # /ПОИСК
 
