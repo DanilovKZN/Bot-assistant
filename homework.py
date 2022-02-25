@@ -21,17 +21,8 @@ TELEGRAM_TOKEN = os.getenv('TOKEN_T')
 PRACTICUM_TOKEN = os.getenv('TOKEN_Y')
 TELEGRAM_CHAT_ID = os.getenv('CHAT_ID')
 DEV_ID = os.getenv('DEV_ID')
+SLEEP_TIME = int(os.getenv('SLEEP_TIME'))
 
-
-# Участок кода изолирован для обхода теста
-# try:
-#     SLEEP_TIME = int(os.getenv('SLEEP_TIME'))
-# except TypeError:
-#     raise TypeError('Ошибка таймера.')
-# if SLEEP_TIME <= 0 or SLEEP_TIME >= 36000:
-#     raise ValueError('Ошибка значений таймера.')
-
-SLEEP_TIME = os.getenv('SLEEP_TIME')
 
 ENDPOINT = 'https://practicum.yandex.ru/api/user_api/homework_statuses/'
 HEADERS = {'Authorization': f'OAuth {PRACTICUM_TOKEN}'}
@@ -203,28 +194,26 @@ def parse_status(homework: dict) -> str:
 
 
 def check_tokens() -> bool:
-    """Если все токены в наличии, то Трушечка."""
+    """Если все токены в наличии и время в норме, то Трушечка."""
+    tokens = [
+        TELEGRAM_CHAT_ID,
+        TELEGRAM_TOKEN,
+        PRACTICUM_TOKEN,
+        DEV_ID,
+        SLEEP_TIME
+    ]
     result = True
-    if not TELEGRAM_CHAT_ID:
-        msg = 'Отсутствут ID пользователя.'
+    if SLEEP_TIME <= 0 or SLEEP_TIME >= 36000:
+        msg = 'Неверное значение таймера!'
         logger.error(msg)
         logging.info(msg)
         result = False
-    elif not TELEGRAM_TOKEN:
-        msg = 'Отсутствут ID бота.'
-        logger.error(msg)
-        logging.info(msg)
-        result = False
-    elif not PRACTICUM_TOKEN:
-        msg = 'Отсутствут ID Практикума.'
-        logger.error(msg)
-        logging.info(msg)
-        result = False
-    elif not DEV_ID:
-        msg = 'Отсутствут ID Developer.'
-        logger.error(msg)
-        logging.info(msg)
-        result = False
+    for token in tokens:
+        if not token:
+            msg = f'Отсутствует {token}'
+            logger.error(msg)
+            logging.info(msg)
+            result = False
     return result
 # /ПОИСК
 
@@ -288,7 +277,7 @@ def main():
                     message = f'Дангер! Паник!: {error}'
                     logger.critical(message)
                     botfilling.send_error_message(bot, message)
-                time.sleep(int(SLEEP_TIME))
+                time.sleep(SLEEP_TIME)
     except KeyboardInterrupt:
         updater.idle()
     except Exception as error:
