@@ -19,13 +19,12 @@ load_dotenv()
 
 TELEGRAM_TOKEN = os.getenv('TOKEN_T')
 TELEGRAM_CHAT_ID = os.getenv('CHAT_ID')
+PRACTICUM_TOKEN = os.getenv('TOKEN_Y')
 
 # НЕ ПРОХОДИТ ТЕСТЫ
 # SLEEP_TIME = int(os.getenv('SLEEP_TIME'))
-# PRACTICUM_TOKEN = os.getenv('TOKEN_Y')
 
 SLEEP_TIME = 30
-PRACTICUM_TOKEN = 'AQAAAAAbOisRAAYckW6v0a_W40Uclx-cyQ6w8Uk'
 
 
 ENDPOINT = 'https://practicum.yandex.ru/api/user_api/homework_statuses/'
@@ -217,7 +216,6 @@ def check_tokens() -> bool:
             msg = f'Отсутствует {tokens[token]}'
             logger.error(msg)
             logging.info(msg)
-            raise AssertionError(msg)
     return result
 # /ПОИСК
 
@@ -242,7 +240,7 @@ def main():
     """Основная логика работы бота."""
     if not check_tokens():
         logging.critical('Токены всё, тю-тю...')
-        sys.exit(1)
+        raise AssertionError('Токены всё, тю-тю...')
     bot = Bot(token=TELEGRAM_TOKEN)
     updater = Updater(token=TELEGRAM_TOKEN)
     current_timestamp = int(time.time())
