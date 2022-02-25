@@ -226,6 +226,8 @@ def check_tokens() -> bool:
     return result
 # /ПОИСК
 
+
+# Участок кода для обхода ошибки: 'main too cmplex(11)'
 def obhod_tester(time, bot):
     """Нужен только для обхода тестера."""
     message = get_api_answer(time)
