@@ -21,7 +21,8 @@ TELEGRAM_TOKEN = os.getenv('TOKEN_T')
 PRACTICUM_TOKEN = os.getenv('TOKEN_Y')
 TELEGRAM_CHAT_ID = os.getenv('CHAT_ID')
 DEV_ID = os.getenv('DEV_ID')
-SLEEP_TIME = int(os.getenv('SLEEP_TIME'))
+SLEEP_TIME = os.getenv('SLEEP_TIME')
+SLEEP_TIME = int(SLEEP_TIME)
 
 
 ENDPOINT = 'https://practicum.yandex.ru/api/user_api/homework_statuses/'
