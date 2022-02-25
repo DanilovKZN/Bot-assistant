@@ -226,6 +226,20 @@ def check_tokens() -> bool:
     return result
 # /ПОИСК
 
+def obhod_tester(time, bot):
+    """Нужен только для обхода тестера."""
+    message = get_api_answer(time)
+    answer = check_response(message)
+    result = parse_status(answer)
+    if result:
+        send_message(bot, result)
+        logger.info('Сообщение отправлено.')
+        botfilling.GENERAL_FLAG.changing_result_a(True)
+    current_timestamp = message.get(
+        'current_date'
+    )
+    return current_timestamp
+
 
 def main():
     """Основная логика работы бота."""
@@ -253,21 +267,16 @@ def main():
             get_api_answer
         )
     )
+
     updater.dispatcher.add_error_handler(error_tg_handler)
     updater.start_polling()
     try:
         while True:
             if not botfilling.GENERAL_FLAG.result_while:
                 try:
-                    message = get_api_answer(current_timestamp)
-                    answer = check_response(message)
-                    result = parse_status(answer)
-                    if result:
-                        send_message(bot, result)
-                        logger.info('Сообщение отправлено.')
-                        botfilling.GENERAL_FLAG.changing_result_a(True)
-                    current_timestamp = message.get(
-                        'current_date'
+                    current_timestamp = obhod_tester(
+                        current_timestamp,
+                        bot
                     )
                 except AttributeError as error:
                     botfilling.send_error_message(bot, error)
