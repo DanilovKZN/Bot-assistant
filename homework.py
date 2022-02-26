@@ -22,7 +22,7 @@ TELEGRAM_CHAT_ID = os.getenv('CHAT_ID')
 PRACTICUM_TOKEN = os.getenv('TOKEN_Y')
 
 # НЕ ПРОХОДИТ ТЕСТЫ
-#SLEEP_TIME = int(os.getenv('SLEEP_TIME','30'))
+# SLEEP_TIME = int(os.getenv('SLEEP_TIME','30'))
 
 SLEEP_TIME = 30
 
@@ -43,6 +43,7 @@ logging.basicConfig(
     format='%(asctime)s-%(levelname)s-%(message)s'
 )
 
+
 # Исключение при ошибке получения API
 class ApiReceivingError(Exception):
     """Исключение при ошибке получения API."""
@@ -51,7 +52,7 @@ class ApiReceivingError(Exception):
 
 
 def is_timer_good():
-    """Если условия не выполняются бот падает"""
+    """Если условия не выполняются бот падает."""
     if SLEEP_TIME <= 0 or SLEEP_TIME >= 36000:
         msg = 'Неверное значение таймера!'
         botfilling.logger.error(msg)
@@ -136,7 +137,7 @@ def get_api_answer(current_timestamp: int) -> str:
     except JSONDecodeError:
         msg = 'Отсутствует JSON.'
         botfilling.logger.error(msg)
-        raise JSONDecodeError(msg)  
+        raise JSONDecodeError(msg)
 
 
 def check_response(response):
@@ -155,7 +156,7 @@ def check_response(response):
         botfilling.logger.error(msg)
         raise KeyError(msg)
     return test_list[0]
-    
+
 
 def parse_status(homework: dict) -> str:
     """Формируем сообщение, если доступны все данные."""
@@ -267,7 +268,7 @@ def main():
                     message = f'Дангер! Паник!: {error}'
                     botfilling.logger.error(message)
                     botfilling.send_error_message(bot, message)
-                time.sleep(SLEEP_TIME) 
+                time.sleep(SLEEP_TIME)
     except KeyboardInterrupt:
         updater.idle()
     except Exception as error:
