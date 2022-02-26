@@ -22,15 +22,15 @@ BOTS_REPLICAS = [
 
 STICKERS = {
     # Работа прошла (100%)
-    '1':
+    'Выполнено':
     'CAACAgIAAxkBAAED8JpiC'
     + '-NT140boOujnrJnLwZCDxRehgACRQwAAnqdmEo2Geh166RTLCME',
     # Работа дошла, но не проверена (Зевает)
-    '2':
+    'Не проверено':
     'CAACAgIAAxkBAAED8JxiC-TR1-6VWQ'
     + 'aY5pta3xfRBB1zJQACoAwAAttxQEoPLS2JLnzifSME',
     # Работа требует доработок (Стучит по клаве)
-    '3':
+    'Доработай':
     'CAACAgIAAxkBAAED8J5iC-UapCEYA'
     + 'AHaj-kb_-r5gH2n0vsAArIAA61lvBRB3wABZwq4QhkjBA',
 }
@@ -48,13 +48,13 @@ PICTURES = {
 # Пристанище флагов
 class MainFlags:
     """Флаги для выполнения кнопок и выбора ответа"""
-    def __init__(self):
-        self.result_while = True
-        self.result_answer = False
+    result_while = True
+    result_answer = False
+    result_bad = True
 
     def changing_result_w(self, result_w: bool):
         if isinstance(result_w, bool):
-            self.result_while = result_w
+            MainFlags.result_while = result_w
         else:
             msg = f'Неверный тип флага {result_w}!'
             logger.error(msg)
@@ -63,29 +63,31 @@ class MainFlags:
 
     def changing_result_a(self, result_a: bool):
         if isinstance(result_a, bool):
-            self.result_while = result_a
+            MainFlags.result_while = result_a
         else:
             msg = f'Неверный тип флага {result_a}!'
             logger.error(msg)
             logging.error(msg)
             raise TelegramError(msg)
 
+    def changing_result_bad(self, result_bad: bool):
+        if isinstance(result_bad, bool):
+            MainFlags.result_bad = result_bad
+        else:
+            msg = f'Неверный тип флага {result_bad}!'
+            logger.error(msg)
+            logging.error(msg)
+            raise TelegramError(msg)        
 
-# Генеральный флаг
-GENERAL_FLAG = MainFlags()
 
 # Создаем логер и используем хендлер для записи в файл
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 handler = RotatingFileHandler(
     'lags.log',
-    maxBytes=50000000,
+    maxBytes=50_000_000,
     backupCount=5
 )
-Formatter = logging.Formatter(
-    '%(asctime)s-%(levelname)s-%(message)s'
-)
-handler.setFormatter(Formatter)
 logger.addHandler(handler)
 
 
@@ -156,33 +158,39 @@ def wake_up(update, context):
 
 # Отправка бага
 def send_error_message(bot, message: str): 
-    """Бот сообщает об ошибке.""" 
+    """Бот сообщает об ошибке."""
+    flag = MainFlags()
     try: 
-        img = open(PICTURES['ben_result'], 'rb') 
+        img = open(PICTURES['ben_error'], 'rb') 
         bot.send_photo(TELEGRAM_CHAT_ID, img)
         logging.info('Картинка отправлена.') 
     except TelegramError:
         logging.error('Картинка не отправлена!')
     bot.send_message(TELEGRAM_CHAT_ID, message) 
     logging.info('Сообщение отправлено!')
+    flag.changing_result_bad(False)
 
 
 # Метки кнопок бота
 def start_search(update, context):
     """Начинаем поиск и выводим оповещение об этом."""
+    flag = MainFlags()
     try:
         img = open(PICTURES['ben_start'], 'rb')
     except TelegramError:
         logger.error('Картинка не найдена!')
     messages = [
-        'Иду за Джеком, будет желание - гляну, есть ли что для тебя.',
-        'Ты уже тыкал сюда, придумай что-нибудь получше.'
+        'Иду за Джеком, будет желание - гляну есть ли что для тебя.',
+        'Ты уже тыкал сюда, придумай что-нибудь получше.',
+        'Я сломан и отказываюсь искать что-либо, тем более для тебя!'
     ]
     chat = update.effective_chat
-    if GENERAL_FLAG.result_while:    
+    if flag.result_while:    
         msg_bot = messages[0]
     else:
         msg_bot = messages[1]
+    if not flag.result_bad:
+        msg_bot = messages[2] 
     context.bot.send_photo(chat.id, img)
     logger.info('Картинка отправлена.')
     if chat.id != int(TELEGRAM_CHAT_ID):
@@ -192,11 +200,12 @@ def start_search(update, context):
         context.bot.send_message(chat.id, msg_bot)
         logger.info('Сообщение отправлено!')
         logging.info('Сообщение отправлено!')
-        GENERAL_FLAG.changing_result_w(False)
+        flag.changing_result_w(False)
 
 
 def stop_search(update, context):
     """Завершаем поиск и выводим оповещение об этом."""
+    flag = MainFlags()
     try:
         img = open(PICTURES['ben_end'], 'rb')
     except TelegramError:
@@ -207,12 +216,12 @@ def stop_search(update, context):
         'Должен будешь!'
     ]
     chat = update.effective_chat
-    if not GENERAL_FLAG.result_while:
-        if not GENERAL_FLAG.result_answer:
+    if not flag.result_while:
+        if not flag.result_answer:
             msg_bot = messages[0]
         else:
             msg_bot = messages[2]
-            GENERAL_FLAG.changing_result_a(False)
+            flag.changing_result_a(False)
     else:
         msg_bot = messages[1]
     context.bot.send_photo(chat.id, img)
@@ -224,4 +233,4 @@ def stop_search(update, context):
         context.bot.send_message(chat.id, msg_bot)
         logger.info('Сообщение отправлено!')
         logging.info('Сообщение отправлено!')
-        GENERAL_FLAG.changing_result_w(True)
+        flag.changing_result_w(True)

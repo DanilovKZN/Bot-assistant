@@ -1,10 +1,10 @@
+from json import JSONDecodeError
 import logging
 import os
 import sys
 import time
 import traceback
 from http import HTTPStatus
-from logging.handlers import RotatingFileHandler
 
 import requests
 from dotenv import load_dotenv
@@ -22,7 +22,7 @@ TELEGRAM_CHAT_ID = os.getenv('CHAT_ID')
 PRACTICUM_TOKEN = os.getenv('TOKEN_Y')
 
 # НЕ ПРОХОДИТ ТЕСТЫ
-# SLEEP_TIME = int(os.getenv('SLEEP_TIME'))
+#SLEEP_TIME = int(os.getenv('SLEEP_TIME','30'))
 
 SLEEP_TIME = 30
 
@@ -43,22 +43,19 @@ logging.basicConfig(
     format='%(asctime)s-%(levelname)s-%(message)s'
 )
 
-# Создаем логер и используем хендлер для записи в файл
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
-handler = RotatingFileHandler(
-    'lags.log',
-    maxBytes=50000000,
-    backupCount=5
-)
-logger.addHandler(handler)
-
-
 # Исключение при ошибке получения API
 class ApiReceivingError(Exception):
     """Исключение при ошибке получения API."""
 
     pass
+
+
+def is_timer_good():
+    """Если условия не выполняются бот падает"""
+    if SLEEP_TIME <= 0 or SLEEP_TIME >= 36000:
+        msg = 'Неверное значение таймера!'
+        botfilling.logger.error(msg)
+        raise AttributeError(msg)
 
 
 def error_tg_handler(update, context):
@@ -83,7 +80,7 @@ def error_tg_handler(update, context):
         f"Полная трассировка:\n\n<code>{trace}</code>"
     )
     context.bot.send_message(TELEGRAM_CHAT_ID, msg_dev)
-    logger.error('Бот сломался!')
+    botfilling.logger.error('Бот сломался!')
     logging.error('Бот работает не так.')
 
 
@@ -92,33 +89,31 @@ def send_message(bot, message: str):
     try:
         img = open(botfilling.PICTURES['ben_result'], 'rb')
         bot.send_photo(TELEGRAM_CHAT_ID, img)
-        logger.info('Картинка отправлена.')
-        logging.info('Картинка отправлена.')
+        botfilling.logger.info('Картинка отправлена.')
     except TelegramError:
-        logger.error('Картинка не отправлена!')
+        botfilling.logger.error('Картинка не отправлена!')
 
     msg = """Как и многие жизненные проблемы,
     эту можно решить сгибанием.
     Держи ответ!: """
 
     bot.send_message(TELEGRAM_CHAT_ID, msg)
-    logger.info('Сообщение отправлено!')
-    logging.info('Сообщение отправлено!')
+    botfilling.logger.info('Сообщение отправлено!')
     bot.send_message(TELEGRAM_CHAT_ID, message)
-    logger.info('Сообщение отправлено!')
-    logging.info('Сообщение отправлено!')
+    botfilling.logger.info('Сообщение отправлено!')
 
     # Стикеры подогнаны под запрет не более двух аргументов на вход
+    stickers = {
+        "Ура!": botfilling.STICKERS['Выполнено'],
+        "взята": botfilling.STICKERS['Доработай'],
+        "замечания": botfilling.STICKERS['Не проверено']
+    }
     try:
-        if 'Ура!' in message:
-            msg_bot = botfilling.STICKERS['1']
-        elif 'взята' in message:
-            msg_bot = botfilling.STICKERS['3']
-        elif 'замечания' in message:
-            msg_bot = botfilling.STICKERS['2']
-        bot.send_sticker(TELEGRAM_CHAT_ID, msg_bot)
+        for key, value in stickers.items():
+            if key in message:
+                bot.send_sticker(TELEGRAM_CHAT_ID, value)
     except FileNotFoundError:
-        logger.error('Стикеры не найдены!')
+        botfilling.logger.error('Стикеры не найдены!')
         raise FileNotFoundError
 
 
@@ -134,102 +129,93 @@ def get_api_answer(current_timestamp: int) -> str:
     )
     if response.status_code != HTTPStatus.OK:
         msg = 'Ошибка в доступе к Практикуму.'
-        logger.error(msg)
-        logging.info(msg)
+        botfilling.logger.error(msg)
         raise ApiReceivingError(msg)
-    else:
+    try:
         return response.json()
+    except JSONDecodeError:
+        msg = 'Отсутствует JSON.'
+        botfilling.logger.error(msg)
+        raise JSONDecodeError(msg)  
 
 
 def check_response(response):
     """Проверяем есть ли что в словаре(списке)."""
     if not isinstance(response, dict):
         raise TypeError('Некорректный тип responce.')
-    else:
-        test_list = response.get('homeworks')
-        if len(test_list) > 1:
-            if 'homework_name' not in test_list[0]:
-                msg = 'Нет ключа: homework_name'
-                logger.error(msg)
-                logging.info(msg)
-                raise KeyError(msg)
-            elif 'status' not in test_list[0]:
-                msg = 'Нет ключа: status'
-                logger.error(msg)
-                logging.info(msg)
-                raise KeyError(msg)
-            else:
-                return test_list[0]
-        else:
-            return test_list
-
+    test_list = response.get('homeworks')
+    if len(test_list) <= 1:
+        return test_list
+    if 'homework_name' not in test_list[0]:
+        msg = 'Нет ключа: homework_name'
+        botfilling.logger.error(msg)
+        raise KeyError(msg)
+    if 'status' not in test_list[0]:
+        msg = 'Нет ключа: status'
+        botfilling.logger.error(msg)
+        raise KeyError(msg)
+    return test_list[0]
+    
 
 def parse_status(homework: dict) -> str:
     """Формируем сообщение, если доступны все данные."""
-    if homework:
-        if not isinstance(homework, dict):
-            msg = 'homework не словарь'
-            logger.error(msg)
-            logging.info(msg)
-            raise TypeError(msg)
-        if 'status' not in homework:
-            msg = 'status нет в homework'
-            logger.error(msg)
-            logging.info(msg)
-            raise KeyError(msg)
-        homework_status = homework.get('status')
-        if homework_status not in HOMEWORK_STATUSES:
-            msg = f'{homework_status} нет в HOMEWORK_STATUSES.'
-            logger.error(msg)
-            logging.info(msg)
-            raise KeyError(msg)
-        verdict = HOMEWORK_STATUSES[homework_status]
-        if 'homework_name' in homework:
-            homework_name = homework.get('homework_name')
-            msg = (
-                f'Изменился статус проверки работы "{homework_name}"'
-                f'.{verdict}'
-            )
-            return msg
-        return f'{verdict}'
-    else:
-        return ''
+    if not homework:
+        return None
+    if not isinstance(homework, dict):
+        msg = 'homework не словарь'
+        botfilling.logger.error(msg)
+        raise TypeError(msg)
+    if 'status' not in homework:
+        msg = 'status нет в homework'
+        botfilling.logger.error(msg)
+        raise KeyError(msg)
+    homework_status = homework.get('status')
+    if homework_status not in HOMEWORK_STATUSES:
+        msg = f'{homework_status} нет в HOMEWORK_STATUSES.'
+        botfilling.logger.error(msg)
+        raise KeyError(msg)
+    verdict = HOMEWORK_STATUSES[homework_status]
+    if 'homework_name' in homework:
+        homework_name = homework.get('homework_name')
+        msg = (
+            f'Изменился статус проверки работы "{homework_name}"'
+            f'.{verdict}'
+        )
+        return msg
+    return f'{verdict}'
 
 
 def check_tokens() -> bool:
     """Если все токены в наличии и время в норме, то Трушечка."""
+    bad_tokens = []
     tokens = {
-        TELEGRAM_CHAT_ID: "ID разработчика",
-        TELEGRAM_TOKEN: "ID бота",
-        PRACTICUM_TOKEN: "ID Практикума",
-        SLEEP_TIME: "Время сна",
+        "ID разработчика": TELEGRAM_CHAT_ID,
+        "ID бота": TELEGRAM_TOKEN,
+        "ID Практикума": PRACTICUM_TOKEN,
     }
     result = True
-    if SLEEP_TIME <= 0 or SLEEP_TIME >= 36000:
-        msg = 'Неверное значение таймера!'
-        logger.error(msg)
-        logging.info(msg)
-        result = False
-    for token in tokens:
+    for key, token in tokens.items():
         if not token:
-            result = False
-            msg = f'Отсутствует {tokens[token]}'
-            logger.error(msg)
-            logging.info(msg)
+            bad_tokens.append(key)
+    if bad_tokens:
+        msg = f'Отсутствуют {bad_tokens}'
+        botfilling.logger.error(msg)
+        result = False
     return result
 # /ПОИСК
 
 
-# Участок кода для обхода ошибки: 'main too cmplex(11)'
-def obhod_tester(time, bot):
+# Участок кода для обхода ошибки: 'main too complex(11)'
+def obhod_tester(time, bot, flag):
     """Нужен только для обхода тестера."""
+    is_timer_good()
     message = get_api_answer(time)
     answer = check_response(message)
     result = parse_status(answer)
     if result:
         send_message(bot, result)
-        logger.info('Сообщение отправлено.')
-        botfilling.GENERAL_FLAG.changing_result_a(True)
+        botfilling.logger.info('Сообщение отправлено.')
+        flag.changing_result_a(True)
     current_timestamp = message.get(
         'current_date'
     )
@@ -238,9 +224,10 @@ def obhod_tester(time, bot):
 
 def main():
     """Основная логика работы бота."""
+    flag = botfilling.MainFlags()
     if not check_tokens():
-        logging.critical('Токены всё, тю-тю...')
-        raise AssertionError('Токены всё, тю-тю...')
+        AssertionError('Токены тю-тю...')
+        sys.exit(1)
     bot = Bot(token=TELEGRAM_TOKEN)
     updater = Updater(token=TELEGRAM_TOKEN)
     current_timestamp = int(time.time())
@@ -267,23 +254,24 @@ def main():
     updater.start_polling()
     try:
         while True:
-            if not botfilling.GENERAL_FLAG.result_while:
+            if not flag.result_while:
                 try:
                     current_timestamp = obhod_tester(
                         current_timestamp,
-                        bot
+                        bot,
+                        flag
                     )
                 except TimeoutError:
                     pass
                 except Exception as error:
                     message = f'Дангер! Паник!: {error}'
-                    logger.critical(message)
+                    botfilling.logger.error(message)
                     botfilling.send_error_message(bot, message)
-                time.sleep(SLEEP_TIME)
+                time.sleep(SLEEP_TIME) 
     except KeyboardInterrupt:
         updater.idle()
     except Exception as error:
-        logger.critical(error)
+        botfilling.logger.critical(error)
         updater.idle()
 
 
