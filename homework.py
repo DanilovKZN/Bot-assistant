@@ -50,6 +50,7 @@ class ApiReceivingError(Exception):
 
     pass
 
+
 # Исключение при неверном значении таймера
 class TimerHasDropped(ValueError):
     """Исключение при падении таймера."""
@@ -190,7 +191,7 @@ def parse_status(homework: dict) -> str:
         botfilling.logger.error(msg)
         raise ValueError(msg)
     verdict = HOMEWORK_STATUSES[homework_status]
-    if not 'homework_name' in homework:
+    if 'homework_name' not in homework:
         msg = 'Нет ключа homework_name'
         botfilling.logger.error(msg)
         raise KeyError(msg)
@@ -210,7 +211,7 @@ def check_tokens() -> bool:
         "ID Практикума": PRACTICUM_TOKEN,
     }
     result = True
-    bad_tokens = [key for key, token in tokens.items() if not token]    
+    bad_tokens = [key for key, token in tokens.items() if not token]
     if bad_tokens:
         msg = f'Отсутствуют {bad_tokens}'
         botfilling.logger.error(msg)
@@ -222,7 +223,7 @@ def check_tokens() -> bool:
 # Участок кода для обхода ошибки: 'main too complex(11)'
 def obhod_tester(time, bot, flag):
     """Нужен только для обхода тестера."""
-    is_timer_good(SLEEP_TIME )
+    is_timer_good(SLEEP_TIME)
     message = get_api_answer(time)
     answer = check_response(message)
     result = parse_status(answer)
