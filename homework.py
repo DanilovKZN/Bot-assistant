@@ -50,13 +50,26 @@ class ApiReceivingError(Exception):
 
     pass
 
+# Исключение при неверном значении таймера
+class TimerHasDropped(ValueError):
+    """Исключение при падении таймера."""
 
-def is_timer_good():
+    pass
+
+
+# Исключение запроса
+class RequestsError(Exception):
+    """Ошибка запроса."""
+
+    pass
+
+
+def is_timer_good(time):
     """Если условия не выполняются бот падает."""
-    if SLEEP_TIME <= 0 or SLEEP_TIME >= 36000:
+    if time <= 0 or time >= 36000:
         msg = 'Неверное значение таймера!'
         botfilling.logger.error(msg)
-        raise AttributeError(msg)
+        raise TimerHasDropped(msg)
 
 
 def error_tg_handler(update, context):
@@ -123,11 +136,16 @@ def get_api_answer(current_timestamp: int) -> str:
     """Получаем ответ на последнюю домашку по точке из пулинга."""
     timestamp = current_timestamp or int(time.time())
     params = {'from_date': timestamp}
-    response = requests.get(
-        ENDPOINT,
-        headers=HEADERS,
-        params=params
-    )
+    try:
+        response = requests.get(
+            ENDPOINT,
+            headers=HEADERS,
+            params=params
+        )
+    except RequestsError:
+        msg = 'Ошибка запроса! Проверьте, что передано в запрос!'
+        botfilling.logger.error(msg)
+        raise RequestsError(msg)
     if response.status_code != HTTPStatus.OK:
         msg = 'Ошибка в доступе к Практикуму.'
         botfilling.logger.error(msg)
@@ -144,17 +162,13 @@ def check_response(response):
     """Проверяем есть ли что в словаре(списке)."""
     if not isinstance(response, dict):
         raise TypeError('Некорректный тип responce.')
+    if 'homeworks' not in response:
+        msg = 'Нет ключа: homeworks'
+        botfilling.logger.error(msg)
+        raise KeyError(msg)
     test_list = response.get('homeworks')
-    if len(test_list) <= 1:
-        return test_list
-    if 'homework_name' not in test_list[0]:
-        msg = 'Нет ключа: homework_name'
-        botfilling.logger.error(msg)
-        raise KeyError(msg)
-    if 'status' not in test_list[0]:
-        msg = 'Нет ключа: status'
-        botfilling.logger.error(msg)
-        raise KeyError(msg)
+    if not test_list:
+        return None
     return test_list[0]
 
 
@@ -165,7 +179,7 @@ def parse_status(homework: dict) -> str:
     if not isinstance(homework, dict):
         msg = 'homework не словарь'
         botfilling.logger.error(msg)
-        raise TypeError(msg)
+        raise KeyError(msg)
     if 'status' not in homework:
         msg = 'status нет в homework'
         botfilling.logger.error(msg)
@@ -174,30 +188,29 @@ def parse_status(homework: dict) -> str:
     if homework_status not in HOMEWORK_STATUSES:
         msg = f'{homework_status} нет в HOMEWORK_STATUSES.'
         botfilling.logger.error(msg)
-        raise KeyError(msg)
+        raise ValueError(msg)
     verdict = HOMEWORK_STATUSES[homework_status]
-    if 'homework_name' in homework:
-        homework_name = homework.get('homework_name')
-        msg = (
-            f'Изменился статус проверки работы "{homework_name}"'
-            f'.{verdict}'
-        )
-        return msg
-    return f'{verdict}'
+    if not 'homework_name' in homework:
+        msg = 'Нет ключа homework_name'
+        botfilling.logger.error(msg)
+        raise KeyError(msg)
+    homework_name = homework.get('homework_name')
+    msg = (
+        f'Изменился статус проверки работы "{homework_name}"'
+        f'.{verdict}'
+    )
+    return msg
 
 
 def check_tokens() -> bool:
     """Если все токены в наличии и время в норме, то Трушечка."""
-    bad_tokens = []
     tokens = {
         "ID разработчика": TELEGRAM_CHAT_ID,
         "ID бота": TELEGRAM_TOKEN,
         "ID Практикума": PRACTICUM_TOKEN,
     }
     result = True
-    for key, token in tokens.items():
-        if not token:
-            bad_tokens.append(key)
+    bad_tokens = [key for key, token in tokens.items() if not token]    
     if bad_tokens:
         msg = f'Отсутствуют {bad_tokens}'
         botfilling.logger.error(msg)
@@ -209,7 +222,7 @@ def check_tokens() -> bool:
 # Участок кода для обхода ошибки: 'main too complex(11)'
 def obhod_tester(time, bot, flag):
     """Нужен только для обхода тестера."""
-    is_timer_good()
+    is_timer_good(SLEEP_TIME )
     message = get_api_answer(time)
     answer = check_response(message)
     result = parse_status(answer)
