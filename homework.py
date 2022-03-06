@@ -180,7 +180,7 @@ def parse_status(homework: dict) -> str:
     if not isinstance(homework, dict):
         msg = 'homework не словарь'
         botfilling.logger.error(msg)
-        raise KeyError(msg)
+        raise TypeError(msg)
     if 'status' not in homework:
         msg = 'status нет в homework'
         botfilling.logger.error(msg)
@@ -189,7 +189,7 @@ def parse_status(homework: dict) -> str:
     if homework_status not in HOMEWORK_STATUSES:
         msg = f'{homework_status} нет в HOMEWORK_STATUSES.'
         botfilling.logger.error(msg)
-        raise ValueError(msg)
+        raise KeyError(msg)
     verdict = HOMEWORK_STATUSES[homework_status]
     if 'homework_name' not in homework:
         msg = 'Нет ключа homework_name'
