@@ -24,7 +24,7 @@ PRACTICUM_TOKEN = os.getenv('TOKEN_Y')
 # НЕ ПРОХОДИТ ТЕСТЫ
 # SLEEP_TIME = int(os.getenv('SLEEP_TIME','30'))
 
-SLEEP_TIME = 30
+SLEEP_TIME = 600
 
 
 ENDPOINT = 'https://practicum.yandex.ru/api/user_api/homework_statuses/'
