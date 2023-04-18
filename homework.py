@@ -220,7 +220,6 @@ def check_tokens() -> bool:
 # /ПОИСК
 
 
-# Участок кода для обхода ошибки: 'main too complex(11)'
 def obhod_tester(time, bot, flag):
     """Нужен только для обхода тестера."""
     is_timer_good(SLEEP_TIME)
