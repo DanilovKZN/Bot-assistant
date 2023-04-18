@@ -6,8 +6,8 @@
 Бот в телеграме: @MyBadAssistantBot
 
 ### Технологии
-Python 3.7
-Модуль: python-telegram-bot 13.11
+python 3.7
+python-telegram-bot 13.11
 
 ### Авторы
 Николай Данилов
